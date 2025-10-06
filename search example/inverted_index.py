@@ -223,7 +223,7 @@ class InvertedIndex:
   # 07/09/2022 - Updated documentation to reflect total TF over all documents is
   #              present int the word data (CJL).
   ###
-  def binary_search_for_term(self, t):
+  def binary_search_for_term(self, t) -> tuple[tuple[str, LinkedList, int], int] | tuple[None, None]:
     low = 0  
     high = len(self.terms) - 1  
     mid = 0  
@@ -262,15 +262,17 @@ class InvertedIndex:
   # ~~~~~~~~~~~~~~~~~
   # 01/05/2021 - Created (CJL).
   ###
-  def get_document_set_from_term(self, t):
+  def get_document_set_from_term(self, t: str) -> set[str]:
     # put the term through the same pre-processing all other text goes through
-    t = self.process_text(t)
+    t: list[str] = self.process_text(t)
     
     # Search for the term.  Add document ID's to set to return.
     try:  
       ll, x = self.binary_search_for_term(t[0])
+      if ll is None:
+        return set()
       iter = LinkedListIterator(ll[1])
-      documents = [ ]
+      documents: list[str] = [ ]
       while True:
         try:  
           item = next(iter)
@@ -327,7 +329,7 @@ class InvertedIndex:
     t = self.process_text(t)
 
     wl, x = self.binary_search_for_term(t[0])
-    if x is not None:
+    if wl is not None:
       return wl[2]
     else:
       return 0
@@ -338,7 +340,7 @@ class InvertedIndex:
 
     wl, x = self.binary_search_for_term(t[0])
 
-    if x is not None:
+    if wl is not None:
       # The length of the posting list is the DF.
       return wl[1].get_size()
     else:
@@ -519,13 +521,10 @@ class InvertedIndex:
     empty = True
     for t in q:
       # First find its location
-      try:
-        _, t_ind = self.search_for_term(t)
+      _, t_ind = self.search_for_term(t)
+      if t_ind is not None:
         v[t_ind] += 1.0
         empty = False
-      except:
-        # If we get here, it's not in our lexicon
-        pass
         
     # Sanity check, if query vector is empty (that is, there is no matching terms
     # in our lexicon) we should appropriately freak out.
