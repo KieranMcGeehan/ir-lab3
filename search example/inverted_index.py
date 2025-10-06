@@ -69,12 +69,12 @@ class InvertedIndex:
     #                            in document a, c the tf-idf value if calculated,
     #                            d the Log-Entropy value if calculated
     #             z total term count overall for term x
-    self.terms = [ ]
+    self.terms: list[tuple[str, LinkedList, int]] = [ ]
 
     # We need to keep track of the documents we have had added
     # Note, in practice you would use an ordinal value to represent the
     # document, not necessarily a text name.  String comparisons are *slow*.
-    self.docs = [ ]
+    self.docs: list[str] = [ ]
     
     # Store this once globally in our object rather than recreating it all the time
     # when processing text
@@ -102,13 +102,13 @@ class InvertedIndex:
   # 07/09/2022 - Updated so total term count over all documents for each individual
   #              term is updated (CJL).
   ###
-  def add_document(self, document):
+  def add_document(self, document: tuple[str, str]):
     doc_id = document[0]
     text   = document[1]
     
     # Sanity check to ensure unique document being added
     if doc_id in self.docs:
-    	raise Exception("Document [" + doc_id + "] already exists in the Inverted Index.")
+      raise Exception("Document [" + doc_id + "] already exists in the Inverted Index.")
       
     # Tokenize and process text.  This is where any text pre-processing
     # will take place.
@@ -128,33 +128,18 @@ class InvertedIndex:
     # At this point we have our document identifier and a processed
     # list of terms, we can now start inserting this into our postings
     # list LinkedList structure
+    z = {trm:(ll,c) for (trm, ll, c) in self.terms}
     for t in counted_text:
       # Extract number of times term t occurs in this document
       c = counted_text[t]
       new_term = False
       
-      # Search for term in our term list...
-      trm, x = self.binary_search_for_term(t)
-        
-      # Test if the term is new or already exists
-      if trm is None:
-        # New term
-        new_term = True
-        ll = LinkedList()
-        ll.insert_at_end([doc_id, c, None, None])
-        self.terms.append([t, ll, c])
-      else:
-        # Postings list already exists, just add onto the end.
-        ll = trm[1]
-        # Update total term count over all documents
-        trm[2] += c
-        ll.insert_at_end([doc_id, c, None, None])
-
-      # Any time we add a new term we need to resort the terms
-      # Alternative approach would be to insert the new term into the correct
-      # location in the list directly 
-      if new_term is True:
-        self.terms.sort(key = lambda tup: tup[0])
+      if t not in z:
+        z[t] = (LinkedList(), 0)
+      z[t][0].insert_at_end([doc_id, c, None, None])
+      z[t] = (z[t][0], z[t][1] + c)
+    self.terms = [(trm,ll,c) for (trm, (ll,c)) in z.items()]
+    self.terms.sort(key = lambda tup: tup[0])
     
   ##
   # This is the method that processes a string of text to be added to
@@ -171,7 +156,7 @@ class InvertedIndex:
   # 18/04/2021 - Added stop word removal, removal of punctuation/non words, 
   #              blank terms and stemming (CJL).
   ###
-  def process_text(self, text):
+  def process_text(self, text: str) -> list[str]:
     # We are just going to trivially split on whitespace
     t = text.split()
 
@@ -182,7 +167,7 @@ class InvertedIndex:
     t = [w for w in t if not w in self.stop_words]
 
     # Get rid of punctuation and non words
-    t = [re.sub('[^\w]', "", w) for w in t]
+    t = [re.sub('[^\\w]', "", w) for w in t]
     
     # If our process above came across something purely not word oriented
     # (for example "--" then we may have empty strings, get rid of those)
@@ -519,13 +504,13 @@ class InvertedIndex:
   # 23/04/2021 - Created (CJL).
   # 06/09/2022 - Added log_entropy parameter for building query with that (CJL).
   ###
-  def create_query_vector(self, q, tfidf = False, log_entropy = False):
+  def create_query_vector(self, q: str, tfidf = False, log_entropy = False):
     # Parameter sanity check
     if tfidf and log_entropy:
       raise Exception("[create_query_vector]:  Error, both tfidf and log_entropy can't both be True.")
 
     # First, process the text as per any other text in the index
-    q = self.process_text(q)
+    q: list[str] = self.process_text(q)
     
     # Next, create an empty vector.  It will be 1 X [number of terms]
     v = [0.0 for i in range(self.get_total_terms())]
@@ -545,7 +530,7 @@ class InvertedIndex:
     # Sanity check, if query vector is empty (that is, there is no matching terms
     # in our lexicon) we should appropriately freak out.
     if empty is True:
-      raise Exception("The query vector for [" + str(q) + "] is empty.")
+      raise Exception("The query vector for " + str(q) + " is empty.")
     
     # We need to take a 2nd pass to update vector as TFIDF if that was selected as
     # some query terms may have occurred more than once which means we can't do it
@@ -564,7 +549,15 @@ class InvertedIndex:
 
     # TODO:  Need to fill this in
     if log_entropy is True:
-      pass
+      total_docs = self.get_total_docs()
+      for x in range(self.get_total_terms()):
+        value = v[x]
+        if value > 0.0:
+          ll = self.terms[x][1]
+          docFreq = ll.get_size()
+          invDocFreq = math.log(total_docs / docFreq)
+          pij = value / docFreq
+          v[x] = math.log(1 + value) * (1 + (pij * math.log(pij)) / math.log(total_docs))
         
     return v
     
@@ -626,7 +619,7 @@ class InvertedIndex:
           tfidf = item[1] * invDocFreq
           item[2] = tfidf
         except StopIteration: 
-      	  break
+          break
 
   ##
   # Calculates the LogEntropy values for the current lexicon for future use.
@@ -640,9 +633,24 @@ class InvertedIndex:
   ###
   def calcLogEntropy(self):
     docs = self.get_total_docs()
-    terms = self.get_total_terms()
 
-    # TODO
+    for t in self.terms:
+      # Get list of documents for this term
+      ll = t[1]
+      # Amount of documents containing this term
+      docFreq = ll.get_size()
+      invDocFreq = math.log(docs / docFreq)
+      # Why the fuck doesn't this code have a normal iterator
+      iter = LinkedListIterator(ll)
+      while True:
+        try:
+          item = next(iter)
+          # Amount of times the term occurs in the document
+          termFreq = item[1]
+          pij = termFreq / docFreq
+          item[3] = math.log(1 + termFreq) * (1 + (pij * math.log(pij)) / math.log(docs))
+        except StopIteration: 
+          break
     pass
 
 ### Debugging random junk below

@@ -18,6 +18,7 @@ inv_ind = InvertedIndex()
 
 # %%
 documents = read_data("./data")
+documents += read_data("./shakespeare")
 print(documents)
 
 # %% [markdown]
@@ -142,7 +143,7 @@ print((caes & brut) - cap)
 # ### Let's generate our TFIDF data for future work and generate a plain term by document matrix for queries.
 
 # %%
-#inv_ind.calcTFIDF()
+inv_ind.calcTFIDF()
 inv_ind.generate_term_by_doc_matrix(tfidf = False)
 
 # %% [markdown]
