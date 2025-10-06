@@ -175,10 +175,10 @@ class InvertedIndex:
     
     # Get rid of purely numerical data
     t = [w for w in t if not w.isnumeric()]
-	
-	# Last step, stem the terms
+  
+  # Last step, stem the terms
     t = [self.stemmer.stem(w) for w in t]
-	
+    
     # Any other text pre-processing would take place here
 
     return t
@@ -200,7 +200,7 @@ class InvertedIndex:
   # ~~~~~~~~~~~~~~~~~
   # 09/10/2019 - Created (CJL).
   ###
-  def search_for_term(self, t):
+  def search_for_term(self, t) -> tuple[tuple[str, LinkedList, int], int] | tuple[None, None]:
     for w in self.terms:
       if w[0] == t:
         return w, self.terms.index(w)
@@ -276,7 +276,7 @@ class InvertedIndex:
           item = next(iter)
           documents.append(item[0])
         except StopIteration: 
-      	  break
+          break
     except:
       return set()
 
@@ -308,7 +308,7 @@ class InvertedIndex:
           item = next(iter)
           list_items.append(item)
         except StopIteration: 
-      	  break
+          break
     except:
       return [ ]
 
@@ -439,8 +439,8 @@ class InvertedIndex:
     # We need to create a total_terms by total_docs matrix
     A = [[0.0 for i in range(total_docs)] for j in range(total_terms)]
 
-	# Go through terms, then documents present in the postings list to update the
-	# A matrix.
+  # Go through terms, then documents present in the postings list to update the
+  # A matrix.
     for i in range(total_terms):
       # Get terms postings linked list
       ll = self.terms[i][1]
@@ -461,7 +461,7 @@ class InvertedIndex:
           else:
             A[i][j] = item[1]
         except StopIteration: 
-      	  break
+          break
             
     # Store this internally for future reference for vector space search
     self.A = A
@@ -482,11 +482,11 @@ class InvertedIndex:
   def get_doc_vector(self, doc_ind):
     # Populate the vector assuming A has been calculated
     if self.A == None:
-    	return None
-    	
+      return None
+      
     # We are essentially slicing a vector out that represents a document in the A matrix.
     v = [self.A[i][doc_ind] for i in range(self.get_total_terms())]
-    	
+    
     return v
   
   ##
@@ -576,22 +576,22 @@ class InvertedIndex:
   def cosine_comparison(self, v1, v2):
     # Normally, some sanity checking should be done here.  For example are both
     # vectors of the same length?  Appropriate type?  Etc.
-  	n = len(v1)
-  	
-  	# Cosine between two vectors is their dot product divided by the product of magnitudes
-  	dot_prod = 0.0
-  	len1 = 0.0
-  	len2 = 0.0
-  	for i in range(n):
-  	  dot_prod += v1[i] * v2[i]
-  	  len1 += v1[i] * v1[i]
-  	  len2 += v2[i] * v2[i]
-  	  
-  	len1 = math.sqrt(len1)
-  	len2 = math.sqrt(len2)
-  	
-  	return dot_prod / (len1 * len2)
-  	  
+    n = len(v1)
+    
+    # Cosine between two vectors is their dot product divided by the product of magnitudes
+    dot_prod = 0.0
+    len1 = 0.0
+    len2 = 0.0
+    for i in range(n):
+      dot_prod += v1[i] * v2[i]
+      len1 += v1[i] * v1[i]
+      len2 += v2[i] * v2[i]
+      
+    len1 = math.sqrt(len1)
+    len2 = math.sqrt(len2)
+  
+    return dot_prod / (len1 * len2)
+      
   ##
   # Calculates the TFIDF values for the current lexicon for future use.
   #
