@@ -18,6 +18,10 @@
 # 06/09/2022 - Included space for Log-Entropy calculation (CJL).
 ###
 
+import itertools
+
+import numpy
+import scipy
 from linked_list import LinkedList
 from linked_list import LinkedListIterator
 from nltk.corpus import stopwords
@@ -381,7 +385,7 @@ class InvertedIndex:
   # ~~~~~~~~~~~~~~~~~
   # 23/04/2021 - Created (CJL).
   ###
-  def search(self, q, tfidf = False, log_entropy = False):
+  def search(self, q, tfidf = False, log_entropy = False, comparison: str = "cosine"):
     # Sanity check flags
     if tfidf and log_entropy:
       raise Exception("[search]:  Error, both tfidf and log_entropy can't both be True.")
@@ -389,11 +393,19 @@ class InvertedIndex:
     # First, process the query and turn it into an appropriate vector representation
     qv = self.create_query_vector(q, tfidf, log_entropy)
     
+    comparison_function = {
+      "cosine": self.cosine_comparison,
+      "euclidian": self.euclidian_comparison,
+      "pearson": self.pearson_comparison,
+      "spearman": self.spearman_comparison,
+      "taxicab": self.taxicab_comparison,
+    }[comparison]
+
     # Iterate through our corpus doing comparisons
     results = [ ]
     for i in range(self.get_total_docs()):
       v = self.get_doc_vector(i)
-      cos = self.cosine_comparison(qv, v)
+      cos = comparison_function(qv, v)
       results.append((self.docs[i], cos))
       
     # sort list of tuples on cosine value - ranked search
@@ -572,7 +584,7 @@ class InvertedIndex:
   # ~~~~~~~~~~~~~~~~~
   # 23/04/2021 - Created (CJL).
   ###
-  def cosine_comparison(self, v1, v2):
+  def cosine_comparison(self, v1: list[float], v2: list[float]):
     # Normally, some sanity checking should be done here.  For example are both
     # vectors of the same length?  Appropriate type?  Etc.
     n = len(v1)
@@ -590,6 +602,18 @@ class InvertedIndex:
     len2 = math.sqrt(len2)
   
     return dot_prod / (len1 * len2)
+  
+  def euclidian_comparison(self, v1: list[float], v2: list[float]):
+    return math.sqrt(sum((a-b)*(a-b) for (a,b) in zip(v1, v2)))
+
+  def pearson_comparison(self, v1: list[float], v2: list[float]):
+    return numpy.corrcoef(v1, v2)[0][1]
+
+  def spearman_comparison(self, v1: list[float], v2: list[float]):
+    return scipy.stats.spearmanr(v1, v2).statistic
+
+  def taxicab_comparison(self, v1: list[float], v2: list[float]):
+    return sum(abs(a-b) for (a,b) in zip(v1, v2))
       
   ##
   # Calculates the TFIDF values for the current lexicon for future use.
