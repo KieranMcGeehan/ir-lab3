@@ -547,7 +547,6 @@ class InvertedIndex:
           invDocFreq = math.log(total_docs / docFreq)
           v[x] = value * invDocFreq
 
-    # TODO:  Need to fill this in
     if log_entropy is True:
       total_docs = self.get_total_docs()
       for x in range(self.get_total_terms()):
