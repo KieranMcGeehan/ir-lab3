@@ -385,7 +385,7 @@ class InvertedIndex:
   # ~~~~~~~~~~~~~~~~~
   # 23/04/2021 - Created (CJL).
   ###
-  def search(self, q, tfidf = False, log_entropy = False, comparison: str = "cosine"):
+  def search(self, q, tfidf = False, log_entropy = False, comparison: str = "cosine") -> list[tuple[str, float]]:
     # Sanity check flags
     if tfidf and log_entropy:
       raise Exception("[search]:  Error, both tfidf and log_entropy can't both be True.")
@@ -607,10 +607,10 @@ class InvertedIndex:
     return -math.sqrt(sum((a-b)*(a-b) for (a,b) in zip(v1, v2)))
 
   def pearson_comparison(self, v1: list[float], v2: list[float]):
-    return numpy.corrcoef(v1, v2)[0][1]
+    return float(numpy.corrcoef(v1, v2)[0][1])
 
   def spearman_comparison(self, v1: list[float], v2: list[float]):
-    return scipy.stats.spearmanr(v1, v2).statistic
+    return float(scipy.stats.spearmanr(v1, v2).statistic)
 
   def taxicab_comparison(self, v1: list[float], v2: list[float]):
     return -sum(abs(a-b) for (a,b) in zip(v1, v2))
