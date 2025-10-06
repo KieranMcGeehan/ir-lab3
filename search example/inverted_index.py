@@ -604,7 +604,7 @@ class InvertedIndex:
     return dot_prod / (len1 * len2)
   
   def euclidian_comparison(self, v1: list[float], v2: list[float]):
-    return math.sqrt(sum((a-b)*(a-b) for (a,b) in zip(v1, v2)))
+    return -math.sqrt(sum((a-b)*(a-b) for (a,b) in zip(v1, v2)))
 
   def pearson_comparison(self, v1: list[float], v2: list[float]):
     return numpy.corrcoef(v1, v2)[0][1]
@@ -613,7 +613,7 @@ class InvertedIndex:
     return scipy.stats.spearmanr(v1, v2).statistic
 
   def taxicab_comparison(self, v1: list[float], v2: list[float]):
-    return sum(abs(a-b) for (a,b) in zip(v1, v2))
+    return -sum(abs(a-b) for (a,b) in zip(v1, v2))
       
   ##
   # Calculates the TFIDF values for the current lexicon for future use.
