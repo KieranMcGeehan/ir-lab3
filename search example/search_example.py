@@ -140,17 +140,17 @@ print((caes & brut) - cap)
 
 
 # %% [markdown]
-# ### Let's generate our TFIDF data for future work and generate a plain term by document matrix for queries.
+# ### Let's generate our TF data for future work and generate a plain term by document matrix for queries.
 
 # %%
-inv_ind.calcTFIDF()
-inv_ind.generate_term_by_doc_matrix(tfidf = True)
+#inv_ind.calcTFIDF()
+inv_ind.generate_term_by_doc_matrix(tfidf = False)
 
 # %% [markdown]
 # ### Now, let's do a query about a Shakespeare play...
 
 # %%
-results = inv_ind.search("scotland kings and thanes", tfidf = True)
+results = inv_ind.search("scotland kings and thanes", tfidf = False)
 for r in results:
     print (r)
 
